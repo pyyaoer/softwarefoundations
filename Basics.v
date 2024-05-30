@@ -28,6 +28,16 @@ Proof. simpl. reflexivity. Qed.
 Example test_andb34: (andb3 true true false) = false.
 Proof. simpl. reflexivity. Qed.
 
+Fixpoint even (n:nat) : bool :=
+  match n with
+  | O => true
+  | S O => false
+  | S (S n') => even n'
+  end.
+
+Definition odd (n:nat) : bool :=
+  negb (even n).
+
 (* Exercise: 1 star, standard (factorial) *)
 Fixpoint factorial (n:nat) : nat :=
   match n with
@@ -111,6 +121,13 @@ Proof.
     + reflexivity.
     + reflexivity.
 Qed.
+
+Theorem negb_involutive : forall b : bool,
+  negb (negb b) = b.
+Proof.
+  intros b. destruct b eqn:E.
+  - reflexivity.
+  - reflexivity. Qed.
 
 (* Exercise: 2 stars, standard (andb_true_elim2) *)
 Theorem andb_true_elim2 : forall b c : bool,
