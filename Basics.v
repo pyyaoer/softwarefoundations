@@ -39,6 +39,18 @@ Proof. simpl. reflexivity. Qed.
 Example test_factorial2: (factorial 5) = (mult 10 12).
 Proof. simpl. reflexivity. Qed.
 
+Fixpoint eqb (n m : nat) : bool :=
+  match n with
+  | O => match m with
+         | O => true
+         | S m' => false
+         end
+  | S n' => match m with
+            | O => false
+            | S m' => eqb n' m'
+            end
+  end.
+
 Fixpoint leb (n m : nat) : bool :=
   match n with
   | O => true
@@ -48,6 +60,9 @@ Fixpoint leb (n m : nat) : bool :=
       | S m' => leb n' m'
       end
   end.
+
+Notation "x =? y" := (eqb x y) (at level 70) : nat_scope.
+Notation "x <=? y" := (leb x y) (at level 70) : nat_scope.
 
 (* Exercise: 1 star, standard (ltb) *)
 Definition ltb (n m : nat) : bool :=
@@ -84,6 +99,39 @@ Proof.
   rewrite <- mult_n_O.
   rewrite <- plus_O_n.
   reflexivity.
+Qed.
+
+Theorem andb_commutative : forall b c, andb b c = andb c b.
+Proof.
+  intros b c. destruct b eqn:Eb.
+  - destruct c eqn:Ec.
+    + reflexivity.
+    + reflexivity.
+  - destruct c eqn:Ec.
+    + reflexivity.
+    + reflexivity.
+Qed.
+
+(* Exercise: 2 stars, standard (andb_true_elim2) *)
+Theorem andb_true_elim2 : forall b c : bool,
+  andb b c = true -> c = true.
+Proof.
+  intros b c H.
+  rewrite andb_commutative in H.
+  destruct c.
+  - reflexivity.
+  - simpl in H.
+    rewrite H.
+    reflexivity.
+Qed.
+
+(* Exercise: 1 star, standard (zero_nbeq_plus_1) *)
+Theorem zero_nbeq_plus_1 : forall n : nat,
+  0 =? (n + 1) = false.
+Proof.
+  intros [].
+  - simpl. reflexivity.
+  - simpl. reflexivity.
 Qed.
 
 (* Exercise: 1 star, standard (identity_fn_applied_twice) *)
@@ -249,7 +297,6 @@ Definition lower_grade (g : grade) : grade :=
   end.
 Example lower_grade_A_Plus :
   lower_grade (Grade A Plus) = (Grade A Natural).
-Proof.
 Proof. simpl. reflexivity. Qed.
 Example lower_grade_A_Natural :
   lower_grade (Grade A Natural) = (Grade A Minus).
@@ -293,4 +340,84 @@ Proof.
       ** rewrite lower_grade_F_Minus. rewrite H. reflexivity.
 Qed.
 
+Definition apply_late_policy (late_days : nat) (g : grade) : grade :=
+  if late_days <? 9 then g
+  else if late_days <? 17 then lower_grade g
+  else if late_days <? 21 then lower_grade (lower_grade g)
+  else lower_grade (lower_grade (lower_grade g)).
+
+Theorem apply_late_policy_unfold :
+  forall (late_days : nat) (g : grade),
+    (apply_late_policy late_days g)
+    =
+    (if late_days <? 9 then g else
+       if late_days <? 17 then lower_grade g
+       else if late_days <? 21 then lower_grade (lower_grade g)
+            else lower_grade (lower_grade (lower_grade g))).
+Proof.
+  intros. reflexivity.
+Qed.
+
+(* Exercise: 2 stars, standard (no_penalty_for_mostly_on_time) *)
+Theorem no_penalty_for_mostly_on_time :
+  forall (late_days : nat) (g : grade),
+    (late_days <? 9 = true) ->
+    apply_late_policy late_days g = g.
+Proof.
+  intros late_days g H.
+  rewrite apply_late_policy_unfold.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Theorem grade_lowered_once :
+  forall (late_days : nat) (g : grade),
+    (late_days <? 9 = false) ->
+    (late_days <? 17 = true) ->
+    (grade_comparison (Grade F Minus) g = Lt) ->
+    (apply_late_policy late_days g) = (lower_grade g).
+Proof.
+  intros late_days g h1 h2 h3.
+  rewrite apply_late_policy_unfold.
+  rewrite h1.
+  rewrite h2.
+  reflexivity.
+Qed.
+
 End LateDays.
+
+(* Exercise: 3 stars, standard (binary) *)
+
+Inductive bin : Type :=
+  | Z
+  | B0 (n : bin)
+  | B1 (n : bin).
+
+Fixpoint incr (m:bin) : bin :=
+  match m with
+  | Z => (B1 Z)
+  | B0 m' => B1 m'
+  | B1 m' => B0 (incr m')
+  end.
+
+Fixpoint bin_to_nat (m:bin) : nat :=
+  match m with
+  | Z => O
+  | B0 m' => mult 2 (bin_to_nat m')
+  | B1 m' => S (mult 2 (bin_to_nat m'))
+  end.
+
+Example test_bin_incr1 : (incr (B1 Z)) = B0 (B1 Z).
+Proof. simpl. reflexivity. Qed.
+Example test_bin_incr2 : (incr (B0 (B1 Z))) = B1 (B1 Z).
+Proof. simpl. reflexivity. Qed.
+Example test_bin_incr3 : (incr (B1 (B1 Z))) = B0 (B0 (B1 Z)).
+Proof. simpl. reflexivity. Qed.
+Example test_bin_incr4 : bin_to_nat (B0 (B1 Z)) = 2.
+Proof. simpl. reflexivity. Qed.
+Example test_bin_incr5 :
+        bin_to_nat (incr (B1 Z)) = 1 + bin_to_nat (B1 Z).
+Proof. simpl. reflexivity. Qed.
+Example test_bin_incr6 :
+        bin_to_nat (incr (incr (B1 Z))) = 2 + bin_to_nat (B1 Z).
+Proof. simpl. reflexivity. Qed.
